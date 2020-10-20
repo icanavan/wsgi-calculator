@@ -41,17 +41,71 @@ To submit your homework:
 
 """
 
+def index():
+    body = ['<h1>WSGI Calculator</h1>', '<ul>']
+    item_template = '<h2>To add, subtract, multiply, and divide, use the corresponding URLs for the function, and include your arguments in the URL bar separated by "/".</h2>'
+    body.append(item_template)
+    body.append('</ul>')
+    return '\n'.join(body)
 
 def add(*args):
     """ Returns a STRING with the sum of the arguments """
 
     # TODO: Fill sum with the correct value, based on the
     # args provided.
-    sum = "0"
+    add = 'add'
+    body = ['<h1>Adding args returns </h1>', '<ul>']
+    sum = 0
+    for n in args:
+        sum = sum + int(n)
+        sum2 = str(sum)
+    body.append(sum2)
+    body.append('</ul>')
 
-    return sum
+    return '\n'.join(body)
 
-# TODO: Add functions for handling more arithmetic operations.
+def subtract(*args):
+
+    subtract = 'subtract'
+    body = ['<h1>Subtracting args returns </h1>', '<ul>']
+    sum = 0
+    for n in args:
+        sum = -sum - int(n)
+        sum2 = str(sum)
+    body.append(sum2)
+    body.append('</ul>')
+
+    return '\n'.join(body)
+
+
+def multiply(*args):
+
+    multiply = 'multiply'
+    body = ['<h1>Multiplying args returns </h1>', '<ul>']
+    sum = 1
+    for n in args:
+        sum = sum * int(n)
+        sum2 = str(sum)
+    body.append(sum2)
+    body.append('</ul>')
+
+    return '\n'.join(body)
+
+def divide(*args):
+    divide = 'divide'
+    body = ['<h1>Dividing args returns </h1>', '<ul>']
+    sum = 1
+    for n in args:
+        if n == args[0]:
+            sum = sum * int(n)
+        else:
+            sum = sum * 1/int(n)
+    sum2 = str(sum)
+    body.append(sum2)
+    body.append('</ul>')
+
+    return '\n'.join(body)
+
 
 def resolve_path(path):
     """
@@ -63,8 +117,26 @@ def resolve_path(path):
     # examples provide the correct *syntax*, but you should
     # determine the actual values of func and args using the
     # path.
-    func = add
-    args = ['25', '32']
+    # func = add
+    # args = ['25', '32']
+
+    funcs = {
+        '': index,
+        'add': add,
+        'subtract': subtract,
+        'multiply': multiply,
+        'divide': divide
+    }
+
+    path = path.strip('/').split('/')
+
+    func_name = path[0]
+    args = path[1:]
+
+    try:
+        func = funcs[func_name]
+    except KeyError:
+        raise NameError
 
     return func, args
 
@@ -76,9 +148,28 @@ def application(environ, start_response):
     #
     # TODO (bonus): Add error handling for a user attempting
     # to divide by zero.
+    headers = [("Content-type", "text/html")]
+    try:
+        path = environ.get('PATH_INFO', None)
+        if path is None:
+            raise NameError
+        func, args = resolve_path(path)
+        body = func(*args)
+        status = "200 OK"
+    except NameError:
+        status = "404 Not Found"
+        body = "<h1>Not Found</h1>"
+    except Exception:
+        status = "500 Internal Server Error"
+        body = "<h1>Internal Server Error</h1>"
+        print(traceback.format_exc())
+    finally:
+        headers.append(('Content-length', str(len(body))))
+        start_response(status, headers)
+        return [body.encode('utf8')]
     pass
 
 if __name__ == '__main__':
-    # TODO: Insert the same boilerplate wsgiref simple
-    # server creation that you used in the book database.
-    pass
+    from wsgiref.simple_server import make_server
+    srv = make_server('localhost', 8080, application)
+    srv.serve_forever()
